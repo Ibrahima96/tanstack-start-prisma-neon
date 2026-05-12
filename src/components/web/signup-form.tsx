@@ -42,7 +42,7 @@ export function SignupForm() {
           fetchOptions: {
             onSuccess: () => {
               toast.success('Account create successfully')
-              navigate({ to: '/' })
+              navigate({ to: '/dashboard' })
             },
             onError: ({ error }) => {
               toast.error(error.message)

@@ -1,0 +1,122 @@
+import { Button } from '#/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '#/components/ui/card'
+import { Field, FieldError, FieldGroup, FieldLabel } from '#/components/ui/field'
+import { Input } from '#/components/ui/input'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
+import { importSchema } from '#/schemas/import'
+import { useForm } from '@tanstack/react-form'
+import { createFileRoute } from '@tanstack/react-router'
+import { Globe, LinkIcon } from 'lucide-react'
+import { useTransition } from 'react'
+
+export const Route = createFileRoute('/dashboard/import')({
+  component: RouteComponent,
+})
+
+function RouteComponent() {
+  const [isPending, startTransition] = useTransition()
+  const form = useForm({
+    defaultValues: {
+      url: '',
+    },
+    validators: {
+      onSubmit: importSchema,
+    },
+    onSubmit: ({ value }) => {
+      startTransition(async () => {
+        console.log(value)
+      })
+    },
+  })
+  return (
+    <div className="flex flex-1 items-center justify-center py-8">
+      <div className="w-full max-w-2xl space-y-6 px-4">
+        <div className="text-center">
+          <h1 className="text-3xl font-semibold">Import content</h1>
+          <p className="text-muted-foreground pt-1">
+            Save web pages to your library for later reading
+          </p>
+        </div>
+        <Tabs defaultValue="single">
+          <TabsList className="grid grid-cols-2 w-full gap-2">
+            <TabsTrigger value="single" className="gap-2">
+              <LinkIcon className="size-4" />
+              Single Url
+            </TabsTrigger>
+            <TabsTrigger value="bulk" className="gap-2">
+              <Globe className="size-4" />
+              Bulk Import
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="single">
+            <Card>
+              <CardHeader>
+                <CardTitle>Import Single URL</CardTitle>
+                <CardDescription>
+                  Scrap and save content from any web app ! 👀
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    form.handleSubmit()
+                  }}
+                >
+                  <FieldGroup>
+                    <form.Field
+                      name="url"
+                      children={(field) => {
+                        const isInvalid =
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>url</FieldLabel>
+                            <Input
+                              id={field.name}
+                              name={field.name}
+                              value={field.state.value}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                field.handleChange(e.target.value)
+                              }
+                              aria-invalid={isInvalid}
+                              placeholder="https://tanstack.com/start/latest"
+                              type="url"
+                              autoComplete="off"
+                            />
+                            {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                            )}
+                          </Field>
+                        )
+                      }}
+                    />
+                    <Button>Submit</Button>
+                  </FieldGroup>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="bulk">
+            <Card>
+              <CardHeader>
+                <CardTitle>Bulk Import</CardTitle>
+                <CardDescription>
+                  Discover and Import multiple URLs a website at once 🚀
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  )
+}

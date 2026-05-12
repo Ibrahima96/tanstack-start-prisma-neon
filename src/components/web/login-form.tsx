@@ -39,8 +39,8 @@ export function LoginForm() {
           // callbackURL: '/dashboard',
           fetchOptions: {
             onSuccess: () => {
-              toast.success('Loging create successfully...')
-              navigate({ to: '/' })
+              toast.success('Loging  successfully...')
+              navigate({ to: '/dashboard' })
             },
             onError: ({ error }) => {
               toast.error(error.message)
