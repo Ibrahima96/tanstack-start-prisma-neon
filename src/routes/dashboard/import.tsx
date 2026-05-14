@@ -6,13 +6,19 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
-import { Field, FieldError, FieldGroup, FieldLabel } from '#/components/ui/field'
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '#/components/ui/field'
 import { Input } from '#/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
-import { importSchema } from '#/schemas/import'
+import { scraptUrlFn } from '#/data/item'
+import { bulkImportSchema, importSchema } from '#/schemas/import'
 import { useForm } from '@tanstack/react-form'
 import { createFileRoute } from '@tanstack/react-router'
-import { Globe, LinkIcon } from 'lucide-react'
+import { Globe, LinkIcon, Loader2 } from 'lucide-react'
 import { useTransition } from 'react'
 
 export const Route = createFileRoute('/dashboard/import')({
@@ -27,6 +33,21 @@ function RouteComponent() {
     },
     validators: {
       onSubmit: importSchema,
+    },
+    onSubmit: ({ value }) => {
+      startTransition(async () => {
+        console.log(value)
+        await scraptUrlFn({ data: value })
+      })
+    },
+  })
+  const bulkForm = useForm({
+    defaultValues: {
+      url: '',
+      search: '',
+    },
+    validators: {
+      onSubmit: bulkImportSchema,
     },
     onSubmit: ({ value }) => {
       startTransition(async () => {
@@ -78,7 +99,7 @@ function RouteComponent() {
                           !field.state.meta.isValid
                         return (
                           <Field data-invalid={isInvalid}>
-                            <FieldLabel htmlFor={field.name}>url</FieldLabel>
+                            <FieldLabel htmlFor={field.name}>URL</FieldLabel>
                             <Input
                               id={field.name}
                               name={field.name}
@@ -99,7 +120,16 @@ function RouteComponent() {
                         )
                       }}
                     />
-                    <Button>Submit</Button>
+                    <Button type="submit" disabled={isPending}>
+                      {isPending ? (
+                        <>
+                          <Loader2 className="size-2 animate-spin" />
+                          "Processing"
+                        </>
+                      ) : (
+                        'Import Url'
+                      )}
+                    </Button>
                   </FieldGroup>
                 </form>
               </CardContent>
@@ -113,6 +143,85 @@ function RouteComponent() {
                   Discover and Import multiple URLs a website at once 🚀
                 </CardDescription>
               </CardHeader>
+              <CardContent>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    bulkForm.handleSubmit()
+                  }}
+                >
+                  <FieldGroup>
+                    <bulkForm.Field
+                      name="url"
+                      children={(field) => {
+                        const isInvalid =
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>URL</FieldLabel>
+                            <Input
+                              id={field.name}
+                              name={field.name}
+                              value={field.state.value}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                field.handleChange(e.target.value)
+                              }
+                              aria-invalid={isInvalid}
+                              placeholder="https://tanstack.com/start/latest"
+                              autoComplete="off"
+                            />
+                            {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                            )}
+                          </Field>
+                        )
+                      }}
+                    />
+                    <bulkForm.Field
+                      name="search"
+                      children={(field) => {
+                        const isInvalid =
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>
+                              Filter (Optional)
+                            </FieldLabel>
+                            <Input
+                              id={field.name}
+                              name={field.name}
+                              value={field.state.value}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                field.handleChange(e.target.value)
+                              }
+                              aria-invalid={isInvalid}
+                              placeholder="e.g , Blog , docs , totorial"
+                              autoComplete="off"
+                            />
+                            {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                            )}
+                          </Field>
+                        )
+                      }}
+                    />
+                    <Button type="submit" disabled={isPending}>
+                      {isPending ? (
+                        <>
+                          <Loader2 className="size-2 animate-spin" />
+                          "Processing"
+                        </>
+                      ) : (
+                        'Import Urls'
+                      )}
+                    </Button>
+                  </FieldGroup>
+                </form>
+              </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
