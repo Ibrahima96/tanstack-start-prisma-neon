@@ -1,18 +1,18 @@
 import { prisma } from '#/db'
 import { firecrawl } from '#/lib/firecrawl'
-import { extractSchema, importSchema } from '#/schemas/import'
+import { bulkImportSchema, extractSchema, importSchema } from '#/schemas/import'
 import { createServerFn } from '@tanstack/react-start'
 import type z from 'zod'
-import { getSessionFn } from './session'
+import { AuthFnMiddleware } from '#/middlewares/auth'
 
 export const scraptUrlFn = createServerFn({ method: 'POST' })
+  .middleware([AuthFnMiddleware])
   .inputValidator(importSchema)
-  .handler(async ({ data }) => {
-    const user = await getSessionFn()
+  .handler(async ({ data, context }) => {
     const item = await prisma.savedItem.create({
       data: {
         url: data.url,
-        userId: user.user.id,
+        userId: context.session.user.id,
         status: 'PROCESSING',
       },
     })
@@ -26,6 +26,7 @@ export const scraptUrlFn = createServerFn({ method: 'POST' })
             schema: extractSchema,
           },
         ],
+        location: { country: 'FR', languages: ['fr'] },
         onlyMainContent: true,
       })
 
@@ -37,7 +38,7 @@ export const scraptUrlFn = createServerFn({ method: 'POST' })
           publishedAt = parsed
         }
       }
-     
+
       const updatedItem = await prisma.savedItem.update({
         where: {
           id: item.id,
@@ -65,3 +66,18 @@ export const scraptUrlFn = createServerFn({ method: 'POST' })
       return failedItem
     }
   })
+
+export const mapUrlFn = createServerFn({ method: 'POST' })
+.middleware([AuthFnMiddleware])
+.inputValidator(bulkImportSchema)
+.handler(async ({data}) => {
+  const result = await firecrawl.map(data.url, {
+    limit: 25,
+    search: data.search,
+    location: {
+      country: 'FR',
+      languages: ['fr'],
+    },
+  })
+  return result.links
+})
