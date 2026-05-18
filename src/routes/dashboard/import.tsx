@@ -15,7 +15,12 @@ import {
 } from '#/components/ui/field'
 import { Input } from '#/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
-import { mapUrlFn, scraptUrlFn } from '#/data/item'
+import {
+  bulkScrapeUrlsFn,
+  mapUrlFn,
+  scraptUrlFn,
+  type BulkScrapeProgress,
+} from '#/data/item'
 import { bulkImportSchema, importSchema } from '#/schemas/import'
 import { type SearchResultWeb } from '@mendable/firecrawl-js'
 import { useForm } from '@tanstack/react-form'
@@ -34,6 +39,8 @@ function RouteComponent() {
   )
   const [isPending, startTransition] = useTransition()
   const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set())
+  const [bulkIsPending, startBulkTransition] = useTransition()
+  const [progress, setProgress] = useState<BulkScrapeProgress | null>(null)
 
   function handeleSelectAll() {
     if (selectedUrls.size === discoveredLink.length) {
@@ -46,10 +53,48 @@ function RouteComponent() {
     const newSelected = new Set(selectedUrls)
     if (newSelected.has(url)) {
       newSelected.delete(url)
-    }else{
+    } else {
       newSelected.add(url)
     }
     setSelectedUrls(newSelected)
+  }
+
+  function handleBulkImport() {
+    startBulkTransition(async () => {
+      if (selectedUrls.size === 0) {
+        toast.error('Please select at least one URL to import.')
+        return
+      }
+
+      setProgress({
+        completed: 0,
+        total: selectedUrls.size,
+        url: '',
+        status: 'success',
+      })
+      let successCount = 0
+      let failedCount = 0
+
+      for await (const update of await bulkScrapeUrlsFn({
+        data: { urls: Array.from(selectedUrls) },
+      })) {
+        setProgress(update)
+
+        if (update.status === 'success') {
+          successCount++
+        } else {
+          failedCount++
+        }
+      }
+
+      setProgress(null)
+
+      if (failedCount > 0) {
+        toast.success(`Imported ${successCount} Urls (${failedCount} failed)`)
+      } else {
+        toast.success(`Successfully imported ${successCount} URLs`)
+      }
+    })
   }
   const form = useForm({
     defaultValues: {
@@ -275,7 +320,7 @@ function RouteComponent() {
                         >
                           <Checkbox
                             className="mt-0.5"
-                            onCheckedChange={()=>handleToggleUrls(link.url)}
+                            onCheckedChange={() => handleToggleUrls(link.url)}
                             checked={selectedUrls.has(link.url)}
                           />
                           <div className="min-w-0 flex-1">
@@ -293,7 +338,23 @@ function RouteComponent() {
                         </label>
                       ))}
                     </div>
-                    <Button className="w-full">Import</Button>
+                    <Button
+                      disabled={bulkIsPending}
+                      onClick={handleBulkImport}
+                      className="w-full"
+                      type="button"
+                    >
+                      {bulkIsPending ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin" />
+                          {progress
+                            ? `Importing ${progress.completed}/${progress.total}...`
+                            : 'Starting...'}
+                        </>
+                      ) : (
+                        `Import ${selectedUrls.size} URLs`
+                      )}
+                    </Button>
                   </div>
                 )}
               </CardContent>

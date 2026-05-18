@@ -5,7 +5,7 @@ import { getRequestHeaders } from '@tanstack/react-start/server'
 
 // Middleware utilisé pour protéger les fonctions côté serveur.
 // Il vérifie la présence d'une session utilisateur avant d'exécuter la logique suivante.
-export const AuthFnMiddleware = createMiddleware({ type: 'function' }).server(
+export const authFnMiddleware = createMiddleware({ type: 'function' }).server(
   async ({ next }) => {
     // Récupère les en-têtes de la requête courante côté serveur.
     const headers = getRequestHeaders()

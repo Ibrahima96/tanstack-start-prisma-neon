@@ -2,11 +2,11 @@ import { prisma } from '#/db'
 import { firecrawl } from '#/lib/firecrawl'
 import { bulkImportSchema, extractSchema, importSchema } from '#/schemas/import'
 import { createServerFn } from '@tanstack/react-start'
-import type z from 'zod'
-import { AuthFnMiddleware } from '#/middlewares/auth'
+import z from 'zod'
+import { authFnMiddleware } from '#/middlewares/auth'
 
 export const scraptUrlFn = createServerFn({ method: 'POST' })
-  .middleware([AuthFnMiddleware])
+  .middleware([authFnMiddleware])
   .inputValidator(importSchema)
   .handler(async ({ data, context }) => {
     const item = await prisma.savedItem.create({
@@ -68,16 +68,123 @@ export const scraptUrlFn = createServerFn({ method: 'POST' })
   })
 
 export const mapUrlFn = createServerFn({ method: 'POST' })
-.middleware([AuthFnMiddleware])
-.inputValidator(bulkImportSchema)
-.handler(async ({data}) => {
-  const result = await firecrawl.map(data.url, {
-    limit: 25,
-    search: data.search,
-    location: {
-      country: 'FR',
-      languages: ['fr'],
-    },
+  .middleware([authFnMiddleware])
+  .inputValidator(bulkImportSchema)
+  .handler(async ({ data }) => {
+    const result = await firecrawl.map(data.url, {
+      limit: 25,
+      search: data.search,
+      location: {
+        country: 'FR',
+        languages: ['fr'],
+      },
+    })
+    return result.links
   })
-  return result.links
-})
+
+export type BulkScrapeProgress = {
+  completed: number
+  total: number
+  url: string
+  status: 'success' | 'failed'
+}
+
+export const bulkScrapeUrlsFn = createServerFn({ method: 'POST' })
+  .middleware([authFnMiddleware])
+  .inputValidator(
+    z.object({
+      urls: z.array(z.string().url()),
+    }),
+  )
+  .handler(async function* ({ data, context }) {
+    const total = data.urls.length
+    for (let i = 0; i < data.urls.length; i++) {
+      const url = data.urls[i]
+
+      const item = await prisma.savedItem.create({
+        data: {
+          url: url,
+          userId: context.session.user.id,
+          status: 'PENDING',
+        },
+      })
+
+      let status: BulkScrapeProgress['status'] = 'success'
+
+      try {
+        const result = await firecrawl.scrape(url, {
+          formats: [
+            'markdown',
+            {
+              type: 'json',
+              //schema: extractSchema,
+              prompt:
+                'please extract the author and also publishedAt timestamp',
+            },
+          ],
+          location: { country: 'FR', languages: ['fr'] },
+          onlyMainContent: true,
+          proxy: 'auto',
+        })
+
+        const jsonData = result.json as z.infer<typeof extractSchema>
+
+        let publishedAt = null
+
+        if (jsonData.publishedAt) {
+          const parsed = new Date(jsonData.publishedAt)
+
+          if (!isNaN(parsed.getTime())) {
+            publishedAt = parsed
+          }
+        }
+
+        await prisma.savedItem.update({
+          where: {
+            id: item.id,
+          },
+          data: {
+            title: result.metadata?.title || null,
+            content: result.markdown || null,
+            ogImage: result.metadata?.ogImage || null,
+            author: jsonData.author || null,
+            publishedAt: publishedAt,
+            status: 'COMPLETED',
+          },
+        })
+      } catch {
+        status = 'failed'
+        await prisma.savedItem.update({
+          where: {
+            id: item.id,
+          },
+          data: {
+            status: 'FAILED',
+          },
+        })
+      }
+
+      const progress: BulkScrapeProgress = {
+        completed: i + 1,
+        total: total,
+        url: url,
+        status: status,
+      }
+
+      yield progress
+    }
+  })
+
+export const getItemsFn = createServerFn({ method: 'GET' })
+  .middleware([authFnMiddleware])
+  .handler(async ({ context }) => {
+    const items = await prisma.savedItem.findMany({
+      where: {
+        userId: context.session.user.id,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    })
+    return items
+  })
