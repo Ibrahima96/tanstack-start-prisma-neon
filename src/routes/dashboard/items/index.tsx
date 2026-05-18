@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { getItemsFn } from '#/data/item' 
+import { getItemsFn } from '#/data/item'
 import { ItemStatus } from '@/generated/prisma/enums'
 import { zodValidator } from '@tanstack/zod-adapter'
 
@@ -156,8 +156,9 @@ function ItemsList({
           className="group overflow-hidden transition-all hover:shadow-lg pt-0"
         >
           <Link
-            to="/dashboard"
+            to="/dashboard/items/$itemId"
             className="block"
+            params={{ itemId: item.id }}
           >
             <div className="aspect-video w-full overflow-hidden bg-muted">
               <img
