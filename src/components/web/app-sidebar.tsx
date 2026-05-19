@@ -39,7 +39,6 @@ export function AppSidebar({ user }: NavUserProps) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        {/* <TeamSwitcher teams={data.teams} /> */}
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size={'lg'} asChild>

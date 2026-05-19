@@ -1,6 +1,11 @@
+import { MessageResponse } from '#/components/ai-elements/message'
 import { Button, buttonVariants } from '#/components/ui/button'
 import { Card, CardContent } from '#/components/ui/card'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#/components/ui/collapsible'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '#/components/ui/collapsible'
 import { getItemById } from '#/data/item'
 import { cn } from '#/lib/utils'
 import { createFileRoute, Link } from '@tanstack/react-router'
@@ -11,8 +16,6 @@ import {
   ChevronDown,
   Clock,
   ExternalLink,
-  Loader2,
-  Sparkles,
   User,
 } from 'lucide-react'
 import { useState } from 'react'
@@ -20,6 +23,34 @@ import { useState } from 'react'
 export const Route = createFileRoute('/dashboard/items/$itemId')({
   component: RouteComponent,
   loader: ({ params }) => getItemById({ data: { id: params.itemId } }),
+    head: ({ loaderData }) => {
+    const title = loaderData?.title ?? 'Item Details'
+    const description =
+      loaderData?.summary ??
+      'View saved article details and AI-generated summary'
+    const image = loaderData?.ogImage
+
+    return {
+      meta: [
+        { title },
+        { name: 'description', content: description },
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: description },
+        { property: 'og:type', content: 'article' },
+        ...(image ? [{ property: 'og:image', content: image }] : []),
+        {
+          name: 'twitter:card',
+          content: image ? 'summary_large_image' : 'summary',
+        },
+        { name: 'twitter:title', content: title },
+        { name: 'twitter:description', content: description },
+        ...(image ? [{ name: 'twitter:image', content: image }] : []),
+        ...(loaderData?.author
+          ? [{ name: 'author', content: loaderData.author }]
+          : []),
+      ],
+    }
+  },
 })
 
 function RouteComponent() {
@@ -94,7 +125,7 @@ function RouteComponent() {
         )}
 
         {/* Summary Section */}
-        <p>* Summary Section */</p>
+        <p>Summary Section</p>
 
         {/* Content Section */}
         {data.content && (
@@ -113,7 +144,7 @@ function RouteComponent() {
             <CollapsibleContent>
               <Card className="mt-2">
                 <CardContent>
-                 {data.content}
+                  <MessageResponse>{data.content}</MessageResponse>
                 </CardContent>
               </Card>
             </CollapsibleContent>
