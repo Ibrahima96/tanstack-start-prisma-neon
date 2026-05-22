@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { getItemsFn } from '#/data/item'
+import { getItemsFn } from '#/data/item' 
 import { ItemStatus } from '@/generated/prisma/enums'
 import { zodValidator } from '@tanstack/zod-adapter'
 
@@ -42,9 +42,7 @@ type ItemsSearch = z.infer<typeof itemsSearchSchema>
 
 export const Route = createFileRoute('/dashboard/items/')({
   component: RouteComponent,
-  loader: () => ({
-    itemsPromise: getItemsFn(),
-  }),
+  loader: () => ({ itemsPromise: getItemsFn() }),
   validateSearch: zodValidator(itemsSearchSchema),
   head: () => ({
     meta: [
@@ -157,8 +155,10 @@ function ItemsList({
         >
           <Link
             to="/dashboard/items/$itemId"
+            params={{
+              itemId: item.id,
+            }}
             className="block"
-            params={{ itemId: item.id }}
           >
             <div className="aspect-video w-full overflow-hidden bg-muted">
               <img

@@ -247,26 +247,20 @@ export const saveSummaryAndGenerateTagsFn = createServerFn({
       throw notFound()
     }
 
-    let tags = existing.tags
-
-    try {
-      const { text } = await generateText({
-        model: openrouter.chat(FREE_AI_MODEL),
-        system: `You are a helpful assistant that extracts relevant tags from content summaries.
+    const { text } = await generateText({
+      model: openrouter.chat(FREE_AI_MODEL),
+      system: `You are a helpful assistant that extracts relevant tags from content summaries.
 Extract 3-5 short, relevant tags that categorize the content.
 Return ONLY a comma-separated list of tags, nothing else.
 Example: technology, programming, web development, javascript`,
-        prompt: `Extract tags from this summary: \n\n${data.summary}`,
-      })
+      prompt: `Extract tags from this summary: \n\n${data.summary}`,
+    })
 
-      tags = text
-        .split(',')
-        .map((tag) => tag.trim().toLowerCase())
-        .filter((tag) => tag.length > 0)
-        .slice(0, 5)
-    } catch (error) {
-      console.error('Failed to generate tags', error)
-    }
+    const tags = text
+      .split(',')
+      .map((tag) => tag.trim().toLowerCase())
+      .filter((tag) => tag.length > 0)
+      .slice(0, 5)
 
     const item = await prisma.savedItem.update({
       where: {

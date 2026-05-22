@@ -24,6 +24,7 @@
     "@ai-sdk/react": "^3.0.190",
     "@hookform/resolvers": "^5.2.2",
     "@mendable/firecrawl-js": "^4.23.0",
+    "@openrouter/ai-sdk-provider": "^2.9.0",
     "@prisma/adapter-pg": "^7.4.2",
     "@prisma/client": "^7.4.2",
     "@streamdown/cjk": "^1.0.3",

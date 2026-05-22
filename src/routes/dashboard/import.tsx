@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import {
   bulkScrapeUrlsFn,
   mapUrlFn,
-  scraptUrlFn,
+  scrapeUrlFn,
   type BulkScrapeProgress,
 } from '#/data/item'
 import { bulkImportSchema, importSchema } from '#/schemas/import'
@@ -130,7 +130,7 @@ function RouteComponent() {
     onSubmit: ({ value }) => {
       startTransition(async () => {
         console.log(value)
-        await scraptUrlFn({ data: value })
+        await scrapeUrlFn({ data: value })
         toast.success('scraped Url successfully')
       })
     },
